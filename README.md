@@ -131,3 +131,94 @@ Now we're ready to deploy our application to ACA. Deployment currently depends o
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.0-preview2" />
 </ItemGroup>
 ```
+
+We'll also need to expose a public endpoint for our Azure Functions project so that requests can be sent to our HTTP trigger:
+
+```csharp
+builder.AddAzureFunctionsProject<Projects.PigLatinApp>("piglatinapp")
+    .WithExternalHttpEndpoints();
+```
+
+To deploy the application via the `azd` CLI, navigate to the folder containing the AppHost project and run `azd init`:
+
+```
+$ azd init
+
+Initializing an app to run on Azure (azd init)
+
+? How do you want to initialize your app? Use code in the current directory
+
+  (✓) Done: Scanning app code in current directory
+
+Detected services:
+
+  .NET (Aspire)
+  Detected in: ./PigLatinApp/PigLatinApp.AppHost/PigLatinApp.AppHost.csproj
+
+azd will generate the files necessary to host your app on Azure using Azure Container Apps.
+
+? Select an option Confirm and continue initializing my app
+? Enter a new environment name: azfunc-piglatin
+
+Generating files to run your app on Azure:
+
+  (✓) Done: Generating ./azure.yaml
+  (✓) Done: Generating ./next-steps.md
+
+SUCCESS: Your app is ready for the cloud!
+```
+
+Then, deploy the application by running `azd up`:
+
+```
+$ azd up 
+? Select an Azure Subscription to use: 130. [redacted]
+? Select an Azure location to use: 50. (US) West US 2 (westus2)
+
+Packaging services (azd package)
+
+
+Provisioning Azure resources (azd provision)
+Provisioning Azure resources can take some time.
+
+Subscription: [redacted]
+Location: West US 2
+
+  You can view detailed progress in the Azure Portal:
+  [redacted]
+
+  (✓) Done: Resource group: rg-azfunc-piglatin (967ms)
+  (✓) Done: Container Registry: [redacted] (13.316s)
+  (✓) Done: Log Analytics workspace: [redacted] (16.467s)
+  (✓) Done: Container Apps Environment: [redacted] (1m35.531s)
+  (✓) Done: Storage account: [redacted] (21.37s)
+
+Deploying services (azd deploy)
+
+  (✓) Done: Deploying service piglatinapp
+  - Endpoint: {{endpoint-url}}
+
+  Aspire Dashboard: {{dashboard-url}}
+```
+
+Finally, test your deployed Functions application using your favorite HTTP client:
+
+```
+$ curl --request POST \
+  --url {{endpoint-url}}/api/Function1 \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "value": "Welcome to Azure Functions"
+}'
+```
+
+
+Support for Azure Functions in Aspire is still in preview with support for a limited set of triggers including:
+
+- HTTP triggers
+- Azure Storage Queue triggers
+- Azure Storage Blob triggers
+- Azure Service Bus triggers
+- Azure Event Hubs triggers
+
+For the latest information on features support by the Azure Functions integration, see [the tracking issue](https://github.com/dotnet/aspire/issues/920).
